@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
+using PicoFacialDataModule.Models;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using VRCFaceTracking;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PicoFacialDataModule
 {
@@ -133,11 +136,17 @@ namespace PicoFacialDataModule
             if (result.Length < (int)PicoFacialDataPayload.PXR_EYE_POSE_END || result.Length > (int)PicoFacialDataPayload.PXR_EYE_POSE_END)
                 return;
 
+            if (!MemoryMarshal.TryRead<PicoFTInfo>(result![(int)PicoFacialDataPayload.FT_INFO_START..(int)PicoFacialDataPayload.PXR_EYE_POSE_START], out var picoFTInfo))
+                return;
+
+            if (!MemoryMarshal.TryRead<PxrEyePoseDataV2>(result![(int)PicoFacialDataPayload.PXR_EYE_POSE_START..], out var eyeData))
+                return;
+
             if (!_moduleSettings!.DisableFaceTracking)
-                _faceTrackingParser!.Parse(result![(int)PicoFacialDataPayload.FT_INFO_START..(int)PicoFacialDataPayload.PXR_EYE_POSE_START]);
+                _faceTrackingParser!.Parse(picoFTInfo);
            
             if (!_moduleSettings.DisableEyeTracking)
-                _eyeTrackingParser!.Parse(result[(int)PicoFacialDataPayload.PXR_EYE_POSE_START..]);
+                _eyeTrackingParser!.Parse(eyeData, picoFTInfo);
         }
 
         /// <summary>

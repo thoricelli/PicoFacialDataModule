@@ -1,71 +1,23 @@
-﻿using System.Runtime.InteropServices;
+﻿using PicoFacialDataModule.Models;
 using VRCFaceTracking;
+using VRCFaceTracking.Core.Params.Expressions;
 
 namespace PicoFacialDataModule
 {
+    using static PicoBlendshapes;
+    using static UnifiedExpressions;
+
     public class EyeTrackingParser
     {
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct PxrEyePoseDataV2
-        {
-            public uint Timestamp;
-
-            public uint LeftEyePoseStatus;
-            public uint RightEyePoseStatus;
-            public uint CombinedEyePoseStatus;
-
-            public float LeftEyeGazePointX;
-            public float LeftEyeGazePointY;
-            public float LeftEyeGazePointZ;
-
-            public float RightEyeGazePointX;
-            public float RightEyeGazePointY;
-            public float RightEyeGazePointZ;
-
-            public float CombinedEyeGazePointX;
-            public float CombinedEyeGazePointY;
-            public float CombinedEyeGazePointZ;
-
-            public float LeftEyeGazeVectorX;
-            public float LeftEyeGazeVectorY;
-            public float LeftEyeGazeVectorZ;
-
-            public float RightEyeGazeVectorX;
-            public float RightEyeGazeVectorY;
-            public float RightEyeGazeVectorZ;
-
-            public float CombinedEyeGazeVectorX;
-            public float CombinedEyeGazeVectorY;
-            public float CombinedEyeGazeVectorZ;
-
-            public float LeftEyeOpenness;
-            public float RightEyeOpenness;
-
-            public float LeftEyePupilDilation;
-            public float RightEyePupilDilation;
-
-            public float LeftEyePositionGuideX;
-            public float LeftEyePositionGuideY;
-            public float LeftEyePositionGuideZ;
-
-            public float RightEyePositionGuideX;
-            public float RightEyePositionGuideY;
-            public float RightEyePositionGuideZ;
-
-            public float FoveatedGazeDirectionX;
-            public float FoveatedGazeDirectionY;
-            public float FoveatedGazeDirectionZ;
-
-            public uint FoveatedGazeTrackingState;
-        }
-
         const float EYE_PUPIL_DILATION_EYE_OPENNESS_THRESHOLD = 0.8f;
-        public void Parse(byte[] data)
+        public void Parse(PxrEyePoseDataV2 eyeData, PicoFTInfo picoFTInfo)
         {
-            if (!MemoryMarshal.TryRead<PxrEyePoseDataV2>(data, out var eyeData))
-                return;
-
             var eye = UnifiedTracking.Data.Eye;
+            var blendshapes = picoFTInfo.BlendshapeWeight;
+            var face = new UnifiedExpressionsSetter();
+
+            if (picoFTInfo.VideoInputValid[0] != 1)
+                return;
 
             eye.Left.Gaze.x = eyeData.LeftEyeGazeVectorX;
             eye.Left.Gaze.y = eyeData.LeftEyeGazeVectorY;
@@ -88,6 +40,20 @@ namespace PicoFacialDataModule
 
             if (eyeData.RightEyeOpenness > EYE_PUPIL_DILATION_EYE_OPENNESS_THRESHOLD)
                 eye.Right.PupilDiameter_MM = eyeData.RightEyePupilDilation / 10;
+
+
+            #region Eyebrow Expressions
+
+            face[BrowPinchRight] = blendshapes[BrowDownR];
+            face[BrowPinchLeft] = blendshapes[BrowDownL];
+            face[BrowLowererRight] = blendshapes[BrowDownR];
+            face[BrowLowererLeft] = blendshapes[BrowDownL];
+            face[BrowInnerUpRight] = blendshapes[BrowInnerUp];
+            face[BrowInnerUpLeft] = blendshapes[BrowInnerUp];
+            face[BrowOuterUpRight] = blendshapes[BrowOuterUpR];
+            face[BrowOuterUpLeft] = blendshapes[BrowOuterUpL];
+
+            #endregion
         }
     }
 }
