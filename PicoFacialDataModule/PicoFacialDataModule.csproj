@@ -22,9 +22,9 @@
     <ProjectReference Include="..\VRCFaceTracking\VRCFaceTracking.SDK\VRCFaceTracking.SDK.csproj" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="copy /y &quot;$(TargetDir)PicoFacialDataModule.dll&quot; &quot;%25APPDATA%25\VRCFaceTracking\CustomLibs&quot;" />
-	  <Exec Command="copy /y &quot;$(TargetDir)PicoFacialDataModule.pdb&quot; &quot;%25APPDATA%25\VRCFaceTracking\CustomLibs&quot;" />
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug'">
+      <Exec Command="copy /y &quot;$(TargetDir)PicoFacialDataModule.dll&quot; &quot;%25APPDATA%25\VRCFaceTracking\CustomLibs&quot;" />
+      <Exec Command="copy /y &quot;$(TargetDir)PicoFacialDataModule.pdb&quot; &quot;%25APPDATA%25\VRCFaceTracking\CustomLibs&quot;" />
   </Target>
 
 </Project>
