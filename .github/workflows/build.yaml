@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
@@ -24,14 +24,17 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-      - name: Publish compiled binaries
-        run: dotnet publish PicoFacialDataModule/PicoFacialDataModule.csproj --configuration Release --output . /p:UseAppHost=false
+      - name: Restore NuGet Packages
+        run: nuget restore PicoFacialDataModule.slnx
+
+      - name: Build with MSBuild
+        run: msbuild PicoFacialDataModule/PicoFacialDataModule.csproj /p:Configuration=Release /p:BuildProjectReferences=true
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: artifact
-          path: PicoFacialDataModule.dll
+          path: PicoFacialDataModule/bin/Release/net10.0/PicoFacialDataModule.dll

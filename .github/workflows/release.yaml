@@ -12,7 +12,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,15 +20,18 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-      - name: Publish compiled binaries
-        run: dotnet publish PicoFacialDataModule/PicoFacialDataModule.csproj --configuration Release --output . /p:UseAppHost=false
+      - name: Restore NuGet Packages
+        run: nuget restore PicoFacialDataModule.slnx
+
+      - name: Build with MSBuild
+        run: msbuild PicoFacialDataModule/PicoFacialDataModule.csproj /p:Configuration=Release /p:BuildProjectReferences=true
 
       - name: ZIP Module
         run: |
-          zip -r picofacialdatamodule.zip PicoFacialDataModule.dll module.json
+          Compress-Archive -Path "PicoFacialDataModule/bin/Release/net10.0/PicoFacialDataModule.dll", "module.json" -DestinationPath "picofacialdatamodule.zip" -Force
 
       - name: Release
         shell: bash
