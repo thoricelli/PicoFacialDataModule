@@ -1,0 +1,43 @@
+name: Release
+permissions:
+  contents: write
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+    paths:
+      - "PicoFacialDataModule/**"
+      - "module.json"
+      - "PicoFacialDataModule.slnx"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish compiled binaries
+        run: dotnet publish PicoFacialDataModule/PicoFacialDataModule.csproj --configuration Release --output . /p:UseAppHost=false
+
+      - name: ZIP Module
+        run: |
+          zip -r picofacialdatamodule.zip PicoFacialDataModule.dll module.json
+
+      - name: Release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release create "$tag" \
+          picofacialdatamodule.zip \
+          --repo="$GITHUB_REPOSITORY" \
+          --title="${tag#v}" \
+          --generate-notes

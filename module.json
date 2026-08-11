@@ -1,0 +1,11 @@
+{
+  "ModuleId": "61ee1324-fd45-42f1-9636-8e28717cf6db",
+  "Version": "0.1-beta",
+  "AuthorName": "thoricelli",
+  "ModuleName": "Pico Facial Data Module",
+  "ModuleDescription": "VRCFaceTracking module for the picofacialdatadaemon",
+  "UsageInstructions": "Install the picofacialdatadaemon as a Magisk module, or execute it manually.",
+  "DownloadUrl": "https://github.com/thoricelli/PicoFacialDataModule/releases/download/v0.1-beta/PicoFacialDataModule.zip",
+  "ModulePageUrl": "https://github.com/thoricelli/PicoFacialDataModule",
+  "DllFileName": "PicoFacialDataModule.dll"
+}

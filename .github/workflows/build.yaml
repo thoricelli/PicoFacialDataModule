@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "PicoFacialDataModule/**"
+      - "module.json"
+      - "PicoFacialDataModule.slnx"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "PicoFacialDataModule/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish compiled binaries
+        run: dotnet publish PicoFacialDataModule/PicoFacialDataModule.csproj --configuration Release --output . /p:UseAppHost=false
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact
+          path: PicoFacialDataModule.dll
