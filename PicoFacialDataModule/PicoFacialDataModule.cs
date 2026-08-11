@@ -32,30 +32,50 @@ namespace PicoFacialDataModule
         private FaceTrackingParser? _faceTrackingParser;
         private EyeTrackingParser? _eyeTrackingParser;
 
+        private ModuleSettings? _moduleSettings;
+
+        public override (bool SupportsEye, bool SupportsExpression) Supported => (true, false);
+
         public override (bool eyeSuccess, bool expressionSuccess) Initialize(bool eyeAvailable, bool expressionAvailable)
         {
-            ModuleInformation.Name = "Pico 4 P/E Facial Tracking Daemon";
-
-            var stream = GetType().Assembly.GetManifestResourceStream("PicoFacialDataModule.Assets.icon.png");
-
-            ModuleInformation.StaticImages = stream != null ? new List<Stream> { stream } : ModuleInformation.StaticImages;
-
-            _udpClient = new UdpClient(PORT)
+            try
             {
-                EnableBroadcast = true,
-                MulticastLoopback = false,
-            };
+                ModuleInformation.Name = "Pico 4 P/E Facial Tracking Daemon";
+                ModuleInformation.Active = true;
 
-            _udpClient.Client.ReceiveTimeout = 2000;
+                var stream = GetType().Assembly.GetManifestResourceStream("PicoFacialDataModule.Assets.icon.png");
 
-            _faceTrackingParser = new FaceTrackingParser();
-            _eyeTrackingParser = new EyeTrackingParser();
+                ModuleInformation.StaticImages = stream != null ? new List<Stream> { stream } : ModuleInformation.StaticImages;
 
-            return (true, true);
+                _udpClient = new UdpClient(PORT)
+                {
+                    EnableBroadcast = true,
+                    MulticastLoopback = false,
+                };
+
+                _udpClient.Client.ReceiveTimeout = 2000;
+
+                _faceTrackingParser = new FaceTrackingParser();
+                _eyeTrackingParser = new EyeTrackingParser();
+
+                _moduleSettings = SettingsManager.GetOrCreate();
+
+                return (!_moduleSettings.DisableEyeTracking, !_moduleSettings.DisableFaceTracking);
+            } catch (Exception e)
+            {
+                Logger.LogCritical($"Initialization failed with the following message: {e.Message}\n Stacktrace:\n{e.StackTrace}");
+                return (false, false);
+            }
         }
 
         public override void Update()
         {
+            if (!ModuleInformation.Active)
+            {
+                Thread.Sleep(500);
+                return;
+            }
+
             try
             {
                 if (!_established)
@@ -63,8 +83,6 @@ namespace PicoFacialDataModule
                     byte[]? initialResult = Start();
 
                     _established = true;
-                    ModuleInformation.Active = true;
-
                     ProcessReply(initialResult);
                 }
 
@@ -77,7 +95,6 @@ namespace PicoFacialDataModule
                 }
                 catch
                 {
-                    ModuleInformation.Active = false;
                     _established = false;
                 }
 
@@ -116,8 +133,11 @@ namespace PicoFacialDataModule
             if (result.Length < (int)PicoFacialDataPayload.PXR_EYE_POSE_END || result.Length > (int)PicoFacialDataPayload.PXR_EYE_POSE_END)
                 return;
 
-            _faceTrackingParser!.Parse(result![(int)PicoFacialDataPayload.FT_INFO_START..(int)PicoFacialDataPayload.PXR_EYE_POSE_START]);
-            _eyeTrackingParser!.Parse(result[(int)PicoFacialDataPayload.PXR_EYE_POSE_START..]);
+            if (!_moduleSettings!.DisableFaceTracking)
+                _faceTrackingParser!.Parse(result![(int)PicoFacialDataPayload.FT_INFO_START..(int)PicoFacialDataPayload.PXR_EYE_POSE_START]);
+           
+            if (!_moduleSettings.DisableEyeTracking)
+                _eyeTrackingParser!.Parse(result[(int)PicoFacialDataPayload.PXR_EYE_POSE_START..]);
         }
 
         /// <summary>
